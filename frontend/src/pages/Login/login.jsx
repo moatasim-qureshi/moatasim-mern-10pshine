@@ -32,49 +32,33 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   setError("");
 
-  if (isLogin) {
-    // ✅ LOGIN API CALL
-    try {
-      const res = await axios.post("http://localhost:3000/api/login", {
+  try {
+    if (isLogin) {
+      const res = await axios.post("http://localhost:5000/api/users/login", {
         email,
         password,
       });
 
       localStorage.setItem("user", JSON.stringify(res.data.user));
-
-
       Swal.fire("Success!", res.data.message, "success");
-
-
-      if (res.data.cartCleaned) {
-        setTimeout(() => {
-          toast.info("Some expired items were removed from your cart.");
-        }, 2000);
-      }
-
-      navigate("/"); 
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed");
-      setError(error.response?.data?.message || "Login failed");
-    }
-  } else {
-    
-    try {
-      const res = await axios.post("http://localhost:3000/api/signup", {
+      navigate("/Home");
+    } else {
+      const res = await axios.post("http://localhost:5000/api/users/register", {
         name: username,
         email,
         password,
-        phonenumber,
       });
 
       Swal.fire("Success!", res.data.message, "success");
-      toggleForm(); 
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Signup failed");
-      setError(error.response?.data?.message || "Signup failed");
+      toggleForm();
     }
+  } catch (error) {
+    console.error(error);
+    toast.error(error.response?.data?.message || "Something went wrong");
+    setError(error.response?.data?.message || "Something went wrong");
   }
 };
+
 
   return (
     <div
@@ -165,17 +149,7 @@ const handleSubmit = async (e) => {
                         required
                       />
                     </div>
-                    <div className="mb-6">
-                      <label className="block text-gray-700 text-sm font-bold mb-2">
-                        Phone Number
-                      </label>
-                      <input
-                        type="text"
-                        value={phonenumber}
-                        onChange={(e) => setPhonenumber(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded"
-                      />
-                    </div>
+                    
                     <div className="mb-6">
                       <label className="block text-gray-700 text-sm font-bold mb-2">
                         Email
@@ -282,17 +256,7 @@ const handleSubmit = async (e) => {
                         required
                       />
                     </div>
-                    <div className="mb-6">
-                      <label className="block text-gray-700 text-sm font-bold mb-2">
-                        Phone Number
-                      </label>
-                      <input
-                        type="text"
-                        value={phonenumber}
-                        onChange={(e) => setPhonenumber(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded"
-                      />
-                    </div>
+                  
                     <div className="mb-6">
                       <label className="block text-gray-700 text-sm font-bold mb-2">
                         Email
