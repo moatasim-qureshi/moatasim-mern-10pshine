@@ -25,16 +25,19 @@ async function initDb() {
       CREATE TABLE users (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL
       );
     `);
 
-    // Create notes table with foreign key
+    // Create notes table with title, description, timestamps, etc.
     await client.query(`
       CREATE TABLE notes (
         id SERIAL PRIMARY KEY,
-        note TEXT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
       );
     `);
