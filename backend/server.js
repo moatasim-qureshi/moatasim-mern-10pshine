@@ -80,8 +80,33 @@ app.post("/api/users/login", async (req, res) => {
   }
 });
 
+app.post("/api/notes/add", async (req, res) => {
+  try {
+    const { title, description, user_id } = req.body;
+
+    if (!title || !description || !user_id) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO notes (title, description, user_id)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [title, description, user_id]
+    );
+
+    res.status(201).json({
+      message: "Note added successfully",
+      note: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Error adding note:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 const PORT = 5000;
 app.listen(PORT, async () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
   
 });

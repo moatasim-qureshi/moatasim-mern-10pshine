@@ -39,7 +39,7 @@ const handleSubmit = async (e) => {
         password,
       });
 
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("user_id", res.data.user.id);
       Swal.fire("Success!", res.data.message, "success");
       navigate("/Home");
     } else {
