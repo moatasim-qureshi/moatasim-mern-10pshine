@@ -7,7 +7,7 @@ const Sidebar = () => {
   { path: "/home/AllNotes", icon: <FaStickyNote />, label: "All Notes" },
   { path: "/home/Notes", icon: <FaPlus />, label: "Add a Note" },
   { path: "/home/Profile", icon: <FaUser />, label: "Profile" },
-  { path: "/home/UploadDoc", icon: <FaUpload />, label: "Upload Document" },
+  { path: "/home/PersonalAssistant", icon: <FaUpload />, label: "Upload Document" },
 ];
 
 
