@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, NavLink } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
-import AddNote from "../AddNote/AddNote";
+import AEDNotes from "../Notes/Notes";
 import UploadDoc from "../UploadDoc/UploadDoc";
 import Profile from "../Profile/Profile";
 import AllNotes from "../AllNotes/AllNotes";
@@ -21,7 +21,8 @@ export default function Home() {
         <Routes>
             <Route path="/" element={<Navigate to="/home/all-notes" replace />} />
           <Route path="/AllNotes" element={<AllNotes />} />
-          <Route path="/AddNote" element={<AddNote />} />
+          <Route path="/Notes" element={<AEDNotes />} />
+          <Route path="/Notes/:id" element={<AEDNotes />} />
           <Route path="/UploadDoc" element={<UploadDoc />} />
           <Route path="/Profile" element={<Profile />} />
         </Routes>
