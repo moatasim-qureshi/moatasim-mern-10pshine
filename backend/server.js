@@ -1,9 +1,12 @@
-// server.js
-import express from "express";
-import pg from "pg";
-import dotenv from "dotenv";
-import cors from "cors";
-import bcrypt from "bcrypt";
+const express = require("express");
+const pg = require("pg");
+const dotenv = require("dotenv");
+const cors = require("cors");
+const bcrypt = require("bcrypt");
+const multer = require("multer");
+const fs = require("fs");
+const pdf = require("pdf-parse");
+const OpenAI = require("openai");
 
 dotenv.config();
 const { Pool } = pg;
@@ -23,6 +26,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+const upload = multer({ dest: "uploads/" });
 
 app.post("/api/users/register", async (req, res) => {
   try {
@@ -189,7 +193,48 @@ app.delete("/api/notes/:id", async (req, res) => {
   }
 });
 
+app.post("/api/pdf-chat", upload.single("file"), async (req, res) => {
+    console.log("Incoming request...");
+    console.log("File:", req.file);
+    console.log("Message:", req.body.message);
+  try {
+    const { message } = req.body;
+    const filePath = req.file.path;
 
+    if (!message || !filePath) {
+      return res.status(400).json({ error: "PDF file and message are required" });
+    }
+
+    // Extract text from PDF
+    const pdfBuffer = fs.readFileSync(filePath);
+    const data = await pdf(pdfBuffer);
+    const pdfText = data.text.substring(0, 15000); // Limit to avoid token overflow
+
+    // Generate response using OpenAI
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant that answers questions based on PDF content.",
+        },
+        {
+          role: "user",
+          content: `PDF Content:\n${pdfText}\n\nQuestion: ${message}`,
+        },
+      ],
+    });
+
+    const answer = completion.choices[0].message.content;
+    fs.unlinkSync(filePath); // delete uploaded PDF after processing
+
+    res.json({ answer });
+  } catch (err) {
+    console.error("Error in /api/pdf-chat:", err);
+    res.status(500).json({ error: "Failed to process PDF" });
+  }
+});
 
 const PORT = 5000;
 app.listen(PORT, async () => {
