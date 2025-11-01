@@ -86,7 +86,9 @@ export default function PersonalAssistant() {
   const handleNewChat = () => {
     if (window.confirm("Start a new chat? This will clear previous messages.")) {
       setMessages([]);
-      localStorage.removeItem("chatMessages");
+      localStorage.removeItem("uploadedFileName");
+      localStorage.removeItem("pdfUploaded");
+      setUploaded(false);
     }
   };
 

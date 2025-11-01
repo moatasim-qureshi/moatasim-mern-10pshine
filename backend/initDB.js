@@ -14,13 +14,12 @@ async function initDb() {
     await client.connect();
     console.log("✅ Connected to Neon PostgreSQL");
 
-    // Drop tables if they exist (optional, for development reset)
     await client.query(`
       DROP TABLE IF EXISTS notes;
       DROP TABLE IF EXISTS users;
+       DROP TABLE IF EXISTS chats;
     `);
 
-    // Create users table
     await client.query(`
       CREATE TABLE users (
         id SERIAL PRIMARY KEY,
@@ -30,7 +29,6 @@ async function initDb() {
       );
     `);
 
-    // Create notes table with title, description, timestamps, etc.
     await client.query(`
       CREATE TABLE notes (
         id SERIAL PRIMARY KEY,
@@ -42,12 +40,32 @@ async function initDb() {
       );
     `);
 
-    console.log("✅ Tables created successfully!");
+    
+    await client.query(`
+        CREATE TABLE chat_sessions (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          title VARCHAR(255) DEFAULT 'New Chat',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+
+    await client.query(`
+      CREATE TABLE chat_messages (
+        id SERIAL PRIMARY KEY,
+        session_id INTEGER REFERENCES chat_sessions(id) ON DELETE CASCADE,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("Tables created successfully!");
   } catch (err) {
-    console.error("❌ Error creating tables:", err);
+    console.error("Error creating tables:", err);
   } finally {
     await client.end();
-    console.log("🔌 Disconnected from database");
+    console.log("Disconnected from database");
   }
 }
 
