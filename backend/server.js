@@ -1,12 +1,17 @@
-const express = require("express");
-const pg = require("pg");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const bcrypt = require("bcrypt");
-const multer = require("multer");
-const fs = require("fs");
-const pdf = require("pdf-parse");
-const OpenAI = require("openai");
+import express from "express";
+import pg from "pg";
+import dotenv from "dotenv";
+import cors from "cors";
+import bcrypt from "bcrypt";
+import multer from "multer";
+// import fileUpload from "express-fileupload";
+// import fs from "fs";
+import fs from "node:fs/promises";
+import { PDFParse } from "pdf-parse";
+// import pkg from "pdf-parse";
+// const pdf = pkg;
+// import pdfToText from "react-pdftotext";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 const { Pool } = pg;
@@ -20,8 +25,12 @@ app.use(
     credentials: true,
   })
 );
+// app.use(fileUpload());
 
-// --- PostgreSQL Connection ---
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
@@ -193,46 +202,60 @@ app.delete("/api/notes/:id", async (req, res) => {
   }
 });
 
-app.post("/api/pdf-chat", upload.single("file"), async (req, res) => {
-    console.log("Incoming request...");
-    console.log("File:", req.file);
-    console.log("Message:", req.body.message);
-  try {
-    const { message } = req.body;
-    const filePath = req.file.path;
 
-    if (!message || !filePath) {
-      return res.status(400).json({ error: "PDF file and message are required" });
+let pdfText = ""; 
+
+
+app.post("/api/upload_pdf", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Extract text from PDF
-    const pdfBuffer = fs.readFileSync(filePath);
-    const data = await pdf(pdfBuffer);
-    const pdfText = data.text.substring(0, 15000); // Limit to avoid token overflow
+    // const { default: pdf } = await import("pdf-parse");
+    const filePath = req.file.path;
+    const parser = new PDFParse({ url: filePath });
+    console.log("Processing file:", filePath);
 
-    // Generate response using OpenAI
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful assistant that answers questions based on PDF content.",
-        },
-        {
-          role: "user",
-          content: `PDF Content:\n${pdfText}\n\nQuestion: ${message}`,
-        },
-      ],
-    });
+    // const dataBuffer = await fs.readFile(filePath);
+    // const data = await pdf(dataBuffer);
+    const result = await parser.getText();
 
-    const answer = completion.choices[0].message.content;
-    fs.unlinkSync(filePath); // delete uploaded PDF after processing
+    pdfText = result.text;
+    await fs.unlink(filePath);
 
-    res.json({ answer });
-  } catch (err) {
-    console.error("Error in /api/pdf-chat:", err);
-    res.status(500).json({ error: "Failed to process PDF" });
+    console.log("PDF processed successfully.");
+    res.json({ message: "PDF uploaded and processed successfully!" });
+
+  } catch (error) {
+    console.error("Error processing PDF:", error);
+    res.status(500).json({ error: error.message || "Error processing PDF" });
+  }
+});
+
+app.post("/api/ask_question", async (req, res) => {
+  const { question } = req.body;
+  if (!pdfText) {
+    return res.status(400).json({ error: "No PDF uploaded yet." });
+  }
+
+  try {
+  
+    const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-pro" });
+
+    const prompt = `
+You are an assistant that answers questions based on PDF content.
+PDF content: """${pdfText.substring(0, 15000)}""" 
+Question: ${question}
+Answer:
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response.text();
+    res.json({ answer: response });
+  } catch (error) {
+    console.error("Error generating answer:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
