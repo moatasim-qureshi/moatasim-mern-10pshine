@@ -318,35 +318,9 @@ app.post("/api/chats/session/create", async (req, res) => {
   }
 });
 
-app.put("/api/chats/session/:session_id/title", async (req, res) => {
+app.get("/api/chats/:user_id", async (req, res) => {
+  const { user_id } = req.params;
   try {
-    const { session_id } = req.params;
-    const { title } = req.body;
-
-    if (!title) return res.status(400).json({ error: "Missing title" });
-
-    const result = await pool.query(
-      `UPDATE chat_sessions SET title = $1 WHERE id = $2 RETURNING *`,
-      [title, session_id]
-    );
-
-    if (result.rows.length === 0)
-      return res.status(404).json({ error: "Chat not found" });
-
-    res.json({
-      message: "Chat title updated successfully",
-      chat: result.rows[0],
-    });
-  } catch (err) {
-    console.error("Error updating chat title:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-app.post("/api/chats/sessions", async (req, res) => {
-  try {
-    const { user_id } = req.body;
-
     const result = await pool.query(
       `SELECT id, title, created_at 
        FROM chat_sessions 
@@ -354,10 +328,9 @@ app.post("/api/chats/sessions", async (req, res) => {
        ORDER BY created_at DESC`,
       [user_id]
     );
-
     res.json(result.rows);
   } catch (err) {
-    console.error("Error fetching chat sessions:", err);
+    console.error(err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
