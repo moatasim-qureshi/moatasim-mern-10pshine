@@ -62,7 +62,7 @@ const VerificationScreen = ({
       </button>
 
       <p className="text-xs text-gray-400 mt-5">
-        Didn’t receive it? Check your spam folder.
+        Didn't receive it? Check your spam folder.
       </p>
     </div>
   );

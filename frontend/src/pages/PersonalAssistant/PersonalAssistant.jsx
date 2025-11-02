@@ -329,22 +329,25 @@ export default function PersonalAssistant() {
           </div>
 
           <div className="flex mt-4 space-x-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAsk()}
-              placeholder="Ask a question about the PDF..."
-              className="flex-1 border rounded p-2"
-            />
-            <button
-              onClick={handleAsk}
-              disabled={loading}
-              className={"bg-black hover:bg-gray-800 text-white px-4 rounded"}
-            >
-              {"Send"}
-            </button>
+  <input
+    type="text"
+    value={input}
+    onChange={(e) => setInput(e.target.value)}
+    onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+    placeholder="Ask a question about the PDF..."
+    className="flex-1 border border-gray-300 rounded-full px-4 py-2 shadow-sm focus:outline-none 
+               focus:ring-2 focus:ring-black/50 focus:border-transparent transition-all duration-200"
+  />
+  <button
+    onClick={handleAsk}
+    disabled={loading}
+    className="bg-black hover:bg-gray-800 text-white px-5 py-2 rounded-full shadow-md 
+               transition-all duration-200 disabled:opacity-50"
+  >
+    Send
+  </button>
           </div>
+
         </div>
       )}
     </div>
