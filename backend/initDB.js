@@ -1,4 +1,3 @@
-// initDb.js
 import pg from "pg";
 import dotenv from "dotenv";
 dotenv.config();
@@ -12,12 +11,14 @@ const client = new Client({
 async function initDb() {
   try {
     await client.connect();
-    console.log("✅ Connected to Neon PostgreSQL");
+    console.log("Connected to Neon PostgreSQL");
 
     await client.query(`
+      DROP TABLE IF EXISTS chat_messages;
+      DROP TABLE IF EXISTS chat_sessions;
       DROP TABLE IF EXISTS notes;
+      DROP TABLE IF EXISTS chats;
       DROP TABLE IF EXISTS users;
-       DROP TABLE IF EXISTS chats;
     `);
 
     await client.query(`
@@ -25,8 +26,8 @@ async function initDb() {
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL
-        profile_image TEXT DEFAULT NULL,
+        password VARCHAR(255) NOT NULL,
+        profile_image TEXT DEFAULT NULL
       );
     `);
 

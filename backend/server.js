@@ -381,7 +381,7 @@ app.get("/api/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      `SELECT id, name, email, profile_image, created_at, updated_at
+      `SELECT id, name, password, profile_image
        FROM users WHERE id = $1`,
       [id]
     );
@@ -396,7 +396,7 @@ app.get("/api/users/:id", async (req, res) => {
   }
 });
 
-app.put("/api/users/:id/profile", upload.single("profile_image"), async (req, res) => {
+app.put("/api/users/:id", upload.single("profile_image"), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, password } = req.body;
@@ -435,8 +435,6 @@ app.put("/api/users/:id/profile", upload.single("profile_image"), async (req, re
     if (fields.length === 0) {
       return res.status(400).json({ error: "No fields to update" });
     }
-
-    fields.push(`updated_at = CURRENT_TIMESTAMP`);
 
     const query = `
       UPDATE users
