@@ -62,6 +62,14 @@ async function initDb() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await client.query(`
+      CREATE TABLE password_resets (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        code VARCHAR(10) NOT NULL,
+        expires_at TIMESTAMP NOT NULL
+      );
+    `);
     console.log("Tables created successfully!");
   } catch (err) {
     console.error("Error creating tables:", err);

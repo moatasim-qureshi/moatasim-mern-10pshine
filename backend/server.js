@@ -13,6 +13,8 @@ import { PDFParse } from "pdf-parse";
 // import pdfToText from "react-pdftotext";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v2 as cloudinary } from "cloudinary";
+import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 
 dotenv.config();
@@ -44,6 +46,14 @@ cloudinary.config({
 });
 
 const upload = multer({ dest: "uploads/" });
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS, 
+  },
+});
 
 app.post("/api/users/register", async (req, res) => {
   try {
@@ -460,8 +470,77 @@ app.put("/api/users/:id", upload.single("profile_image"), async (req, res) => {
   }
 });
 
+app.post("/api/users/:id/request-password-change", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userResult = await pool.query(
+      "SELECT email FROM users WHERE id = $1",
+      [id]
+    );
 
+    if (userResult.rows.length === 0)
+      return res.status(404).json({ error: "User not found" });
 
+    const email = userResult.rows[0].email;
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await pool.query(
+      "INSERT INTO password_resets (user_id, code, expires_at) VALUES ($1, $2, $3)",
+      [id, code, expiresAt]
+    );
+
+    // send email
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Change Verification Code",
+      html: `
+        <h2>Password Change Request</h2>
+        <p>Your verification code is: <b>${code}</b></p>
+        <p>This code expires in 10 minutes.</p>
+      `,
+    });
+
+    res.json({ message: "Verification code sent to your email." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/api/users/:id/verify-password-change", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { code, newPassword } = req.body;
+
+    const result = await pool.query(
+      "SELECT * FROM password_resets WHERE user_id = $1 AND code = $2 ORDER BY id DESC LIMIT 1",
+      [id, code]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(400).json({ error: "Invalid code" });
+
+    const reset = result.rows[0];
+    if (new Date(reset.expires_at) < new Date())
+      return res.status(400).json({ error: "Code expired" });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE users SET password = $1 WHERE id = $2", [
+      hashedPassword,
+      id,
+    ]);
+
+    await pool.query("DELETE FROM password_resets WHERE user_id = $1", [id]); // cleanup
+
+    res.json({ message: "Password updated successfully." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 const PORT = 5000;
 app.listen(PORT, async () => {
