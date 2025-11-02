@@ -12,6 +12,8 @@ import { PDFParse } from "pdf-parse";
 // const pdf = pkg;
 // import pdfToText from "react-pdftotext";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { v2 as cloudinary } from "cloudinary";
+
 
 dotenv.config();
 const { Pool } = pg;
@@ -35,6 +37,12 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 const upload = multer({ dest: "uploads/" });
 
 app.post("/api/users/register", async (req, res) => {
@@ -45,10 +53,8 @@ app.post("/api/users/register", async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user
     const result = await pool.query(
       `INSERT INTO users (name, email, password)
        VALUES ($1, $2, $3)
@@ -370,6 +376,93 @@ app.delete("/api/chats/session/:session_id", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.get("/api/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT id, name, email, profile_image, created_at, updated_at
+       FROM users WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "User not found" });
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error fetching profile:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.put("/api/users/:id/profile", upload.single("profile_image"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, password } = req.body;
+    let imageUrl = null;
+
+    // Optional Cloudinary upload if file exists
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "user_profiles",
+      });
+      imageUrl = uploadResult.secure_url;
+      await fs.unlink(req.file.path);
+    }
+
+    // Build dynamic query
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (name) {
+      fields.push(`name = $${idx++}`);
+      values.push(name);
+    }
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      fields.push(`password = $${idx++}`);
+      values.push(hashedPassword);
+    }
+
+    if (imageUrl) {
+      fields.push(`profile_image = $${idx++}`);
+      values.push(imageUrl);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    fields.push(`updated_at = CURRENT_TIMESTAMP`);
+
+    const query = `
+      UPDATE users
+      SET ${fields.join(", ")}
+      WHERE id = $${idx}
+      RETURNING id, name, email, profile_image
+    `;
+
+    values.push(id);
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "User not found" });
+
+    res.json({
+      message: "Profile updated successfully",
+      user: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
 
 
 const PORT = 5000;
