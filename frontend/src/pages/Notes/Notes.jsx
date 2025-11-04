@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Editor } from "@tinymce/tinymce-react";
-import axios from "axios";
+// import axios from "axios";
 import Swal from "sweetalert2";
 import { useNavigate, useParams } from "react-router-dom";
+import axios from "../../axiosConfig.js";
 
 export default function AEDNotes() {
   const { id: noteId } = useParams();
@@ -19,7 +20,7 @@ export default function AEDNotes() {
     const fetchNote = async () => {
       if (noteId) {
         try {
-          const res = await axios.get(`http://localhost:5000/api/notes/${noteId}`);
+          const res = await axios.get(`/notes/${noteId}`);
           const note = res.data;
           setTitle(note.title || "");
           setContent(note.description || "");
@@ -44,14 +45,14 @@ export default function AEDNotes() {
         return Swal.fire("Error", "Please fill all fields", "error");
 
       if (mode === "add") {
-        const res = await axios.post("http://localhost:5000/api/notes/add", {
+        const res = await axios.post("/notes/add", {
           title,
           description: content,
           user_id,
         });
         Swal.fire("Success", res.data.message, "success");
       } else if (mode === "edit") {
-        await axios.put(`http://localhost:5000/api/notes/${noteId}`, {
+        await axios.put(`/notes/${noteId}`, {
           title,
           description: content,
         });
@@ -84,7 +85,6 @@ export default function AEDNotes() {
           : "Viewing Note"}
       </h2>
 
-      {/* Title Input */}
       <input
         type="text"
         placeholder="Enter note title..."
@@ -105,7 +105,6 @@ export default function AEDNotes() {
         }`}
       />
 
-      {/* Editor */}
       <div className="relative">
         <Editor
           apiKey="vnyu773hbf5l349o66321lzn28qgolhph7ibh09jucdvu2z2"
@@ -153,7 +152,6 @@ export default function AEDNotes() {
         )}
       </div>
 
-      {/* Buttons */}
       <div className="mt-4 flex gap-3">
         {mode === "edit" && (
           <>

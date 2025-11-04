@@ -36,6 +36,7 @@ const Login = () => {
         });
 
         localStorage.setItem("user_id", res.data.user.id);
+        localStorage.setItem("token", res.data.token);
         Swal.fire("Success!", res.data.message, "success");
         navigate("/Home");
       } else {

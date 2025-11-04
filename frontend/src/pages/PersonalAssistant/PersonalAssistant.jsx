@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+// import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Swal from "sweetalert2";
 import { MdOutlineDeleteOutline } from "react-icons/md";
+import axios from "../../axiosConfig.js";
 
 export default function PersonalAssistant() {
   const [pdfFile, setPdfFile] = useState(null);
@@ -25,7 +26,7 @@ export default function PersonalAssistant() {
 
   const fetchSessions = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/chats/${userId}`);
+      const res = await axios.get(`/chats/${userId}`);
       setSessions(res.data);
     } catch (err) {
       console.error("Error fetching chat sessions:", err);
@@ -35,7 +36,7 @@ export default function PersonalAssistant() {
   const fetchMessages = async (sessionId) => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/chats/session/${sessionId}`
+        `/chats/session/${sessionId}`
       );
       setMessages(
         res.data
@@ -61,12 +62,12 @@ export default function PersonalAssistant() {
 
     try {
       setLoading(true);
-      await axios.post("http://localhost:5000/api/upload_pdf", formData, {
+      await axios.post("/upload_pdf", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       const sessionRes = await axios.post(
-        "http://localhost:5000/api/chats/session/create",
+        "/chats/session/create",
         {
           user_id: userId,
           title: pdfFile.name,
@@ -97,7 +98,7 @@ export default function PersonalAssistant() {
 
 
     try {
-      const res = await axios.post("http://localhost:5000/api/ask_question", {
+      const res = await axios.post("/ask_question", {
         user_id: userId,
         question: input,
         session_id: activeSession.id,
@@ -145,7 +146,7 @@ export default function PersonalAssistant() {
 
     if (confirm.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:5000/api/chats/session/${sessionId}`);
+        await axios.delete(`/chats/session/${sessionId}`);
         Swal.fire("Deleted!", "Chat session deleted successfully.", "success");
         fetchSessions();
 

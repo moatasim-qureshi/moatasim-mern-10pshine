@@ -15,6 +15,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v2 as cloudinary } from "cloudinary";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
+import { verifyToken } from "./middleware/verifytoken.js";
 
 
 dotenv.config();
@@ -99,8 +101,15 @@ app.post("/api/users/login", async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid email or password" });
 
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "1d" }
+    );
+
     res.json({
       message: "Login successful",
+      token,
       user: { id: user.id, name: user.name, email: user.email },
     });
   } catch (err) {
@@ -109,7 +118,7 @@ app.post("/api/users/login", async (req, res) => {
   }
 });
 
-app.post("/api/notes/add", async (req, res) => {
+app.post("/api/notes/add", verifyToken, async (req, res) => {
   try {
     
     const { title, description, user_id } = req.body;
@@ -136,7 +145,7 @@ app.post("/api/notes/add", async (req, res) => {
   }
 });
 
-app.post("/api/notes/get", async (req, res) => {
+app.post("/api/notes/get", verifyToken,async (req, res) => {
   try {
     const { user_id } = req.body;
 
@@ -156,7 +165,7 @@ app.post("/api/notes/get", async (req, res) => {
   }
 });
 
-app.get("/api/notes/:id", async (req, res) => {
+app.get("/api/notes/:id", verifyToken,async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -173,7 +182,7 @@ app.get("/api/notes/:id", async (req, res) => {
   }
 });
 
-app.put("/api/notes/:id", async (req, res) => {
+app.put("/api/notes/:id", verifyToken,async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description } = req.body;
@@ -201,7 +210,7 @@ app.put("/api/notes/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/notes/:id", async (req, res) => {
+app.delete("/api/notes/:id", verifyToken,async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -222,7 +231,7 @@ app.delete("/api/notes/:id", async (req, res) => {
 let pdfText = ""; 
 
 
-app.post("/api/upload_pdf", upload.single("file"), async (req, res) => {
+app.post("/api/upload_pdf", verifyToken,upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -275,7 +284,7 @@ app.post("/api/upload_pdf", upload.single("file"), async (req, res) => {
 //   }
 // });
 
-app.post("/api/ask_question", async (req, res) => {
+app.post("/api/ask_question",verifyToken, async (req, res) => {
   const { user_id, session_id, question } = req.body;
 
   if (!pdfText) {
@@ -298,7 +307,7 @@ Answer:
     const result = await model.generateContent(prompt);
     const response = await result.response.text();
 
-    // ✅ Save question + answer in chat_messages
+   
     await pool.query(
       `INSERT INTO chat_messages (session_id, question, answer) VALUES ($1, $2, $3)`,
       [session_id, question, response]
@@ -311,7 +320,7 @@ Answer:
   }
 });
 
-app.post("/api/chats/session/create", async (req, res) => {
+app.post("/api/chats/session/create",verifyToken, async (req, res) => {
   try {
     const { user_id, title } = req.body;
 
@@ -334,7 +343,7 @@ app.post("/api/chats/session/create", async (req, res) => {
   }
 });
 
-app.get("/api/chats/:user_id", async (req, res) => {
+app.get("/api/chats/:user_id", verifyToken,async (req, res) => {
   const { user_id } = req.params;
   try {
     const result = await pool.query(
@@ -351,7 +360,7 @@ app.get("/api/chats/:user_id", async (req, res) => {
   }
 });
 
-app.get("/api/chats/session/:session_id", async (req, res) => {
+app.get("/api/chats/session/:session_id", verifyToken,async (req, res) => {
   try {
     const { session_id } = req.params;
 
@@ -367,7 +376,7 @@ app.get("/api/chats/session/:session_id", async (req, res) => {
   }
 });
 
-app.delete("/api/chats/session/:session_id", async (req, res) => {
+app.delete("/api/chats/session/:session_id", verifyToken,async (req, res) => {
   try {
     const { session_id } = req.params;
 
@@ -387,11 +396,11 @@ app.delete("/api/chats/session/:session_id", async (req, res) => {
   }
 });
 
-app.get("/api/users/:id", async (req, res) => {
+app.get("/api/users/:id",verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      `SELECT id, name, password, profile_image
+      `SELECT id, name, email,password, profile_image
        FROM users WHERE id = $1`,
       [id]
     );
@@ -406,13 +415,13 @@ app.get("/api/users/:id", async (req, res) => {
   }
 });
 
-app.put("/api/users/:id", upload.single("profile_image"), async (req, res) => {
+app.put("/api/users/:id", verifyToken,upload.single("profile_image"), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, password } = req.body;
     let imageUrl = null;
 
-    // Optional Cloudinary upload if file exists
+   
     if (req.file) {
       const uploadResult = await cloudinary.uploader.upload(req.file.path, {
         folder: "user_profiles",
@@ -421,7 +430,7 @@ app.put("/api/users/:id", upload.single("profile_image"), async (req, res) => {
       await fs.unlink(req.file.path);
     }
 
-    // Build dynamic query
+
     const fields = [];
     const values = [];
     let idx = 1;
@@ -470,7 +479,7 @@ app.put("/api/users/:id", upload.single("profile_image"), async (req, res) => {
   }
 });
 
-app.post("/api/users/:id/request-password-change", async (req, res) => {
+app.post("/api/users/:id/request-password-change",verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const userResult = await pool.query(
@@ -491,7 +500,7 @@ app.post("/api/users/:id/request-password-change", async (req, res) => {
       [id, code, expiresAt]
     );
 
-    // send email
+    
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -510,7 +519,7 @@ app.post("/api/users/:id/request-password-change", async (req, res) => {
   }
 });
 
-app.post("/api/users/:id/verify-password-change", async (req, res) => {
+app.post("/api/users/:id/verify-password-change", verifyToken,async (req, res) => {
   try {
     const { id } = req.params;
     const { code, newPassword } = req.body;
@@ -533,7 +542,7 @@ app.post("/api/users/:id/verify-password-change", async (req, res) => {
       id,
     ]);
 
-    await pool.query("DELETE FROM password_resets WHERE user_id = $1", [id]); // cleanup
+    await pool.query("DELETE FROM password_resets WHERE user_id = $1", [id]);
 
     res.json({ message: "Password updated successfully." });
   } catch (err) {

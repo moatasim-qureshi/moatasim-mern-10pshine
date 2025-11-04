@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+// import axios from "axios";
 import Swal from "sweetalert2";
 import VerificationScreen from "../../components/Verfication";
+import axios from "../../axiosConfig.js";
+
 
 const Profile = () => {
   const userId = localStorage.getItem("user_id");
@@ -17,7 +19,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/users/${userId}`);
+        const res = await axios.get(`/users/${userId}`);
         setUser(res.data);
         setName(res.data.name || "");
         setPreview(res.data.profile_image || "");
@@ -36,20 +38,48 @@ const Profile = () => {
     }
   };
 
+  // const handleUpdate = async () => {
+  //   if (!newPassword.trim()) {
+  //     Swal.fire("Error", "Please enter a new password first.", "error");
+  //     return;
+  //   }
+
+  //   try {
+  //     await axios.post(`/users/${userId}/request-password-change`);
+  //     setCodeSent(true);
+  //     setIsChangingPassword(true);
+  //   } catch (err) {
+  //     Swal.fire("Error", "Failed to send verification code.", "error");
+  //   }
+  // };
+
   const handleUpdate = async () => {
-    if (!newPassword.trim()) {
-      Swal.fire("Error", "Please enter a new password first.", "error");
+  try {
+    if (newPassword.trim()) {
+      await axios.post(`/users/${userId}/request-password-change`);
+      setCodeSent(true);
+      setIsChangingPassword(true);
+      Swal.fire("Verification Sent", "A code has been sent to your email.", "info");
       return;
     }
 
-    try {
-      await axios.post(`http://localhost:5000/api/users/${userId}/request-password-change`);
-      setCodeSent(true);
-      setIsChangingPassword(true);
-    } catch (err) {
-      Swal.fire("Error", "Failed to send verification code.", "error");
-    }
-  };
+
+    const formData = new FormData();
+    if (name.trim()) formData.append("name", name);
+    if (profileImage) formData.append("profile_image", profileImage);
+
+    const res = await axios.put(`/users/${userId}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    Swal.fire("Updated", "Profile updated successfully!", "success");
+    setUser(res.data.user);
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", err.response?.data?.error || "Failed to update profile.", "error");
+  }
+};
+
 
   const handleCodeChange = (index, value) => {
     if (/^[0-9]?$/.test(value)) {
@@ -70,7 +100,7 @@ const Profile = () => {
 
   const verifyCode = async (code) => {
     try {
-      await axios.post(`http://localhost:5000/api/users/${userId}/verify-password-change`, {
+      await axios.post(`/users/${userId}/verify-password-change`, {
         code,
         newPassword,
       });
@@ -95,7 +125,7 @@ const Profile = () => {
 
   const handleResend = async () => {
     try {
-      await axios.post(`http://localhost:5000/api/users/${userId}/request-password-change`);
+      await axios.post(`/users/${userId}/request-password-change`);
       Swal.fire("Sent!", "Verification code resent successfully.", "success");
     } catch {
       Swal.fire("Error", "Failed to resend code.", "error");
@@ -121,7 +151,7 @@ const Profile = () => {
       <div className="flex flex-col items-center gap-4">
         <div className="relative group">
           <img
-            src={preview || "https://via.placeholder.com/150?text=Profile"}
+            src={preview || "https://avatar.iran.liara.run/public/8"}
             alt="Profile"
             className="w-32 h-32 rounded-full object-cover border border-gray-300 shadow-sm"
           />
@@ -161,8 +191,9 @@ const Profile = () => {
           onClick={handleUpdate}
           className="w-full bg-black text-white py-2.5 rounded-xl font-medium hover:opacity-90 transition mt-4"
         >
-          Update Password
+          Save Changes
         </button>
+
       </div>
     </div>
   );

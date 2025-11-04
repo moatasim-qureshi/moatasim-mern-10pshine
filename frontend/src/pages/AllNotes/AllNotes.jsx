@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import NoteCard from "../../components/Noteslist";
 import Swal from "sweetalert2";
 import { FiSearch } from "react-icons/fi";
 import { motion } from "framer-motion";
+import axios from "../../axiosConfig.js";
 
 export default function AllNotes() {
   const [notes, setNotes] = useState([]);
@@ -20,7 +21,7 @@ export default function AllNotes() {
         return;
       }
 
-      const res = await axios.post("http://localhost:5000/api/notes/get", {
+      const res = await axios.post("/notes/get", {
         user_id,
       });
 
@@ -50,7 +51,7 @@ export default function AllNotes() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/notes/${id}`);
+      await axios.delete(`/notes/${id}`);
       Swal.fire("Deleted!", "Note has been deleted.", "success");
       setNotes((prev) => prev.filter((n) => n.id !== id));
     } catch (err) {
