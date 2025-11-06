@@ -3,12 +3,12 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import "@testing-library/jest-dom";
 
-// Mock dependencies
+
 const mockPost = jest.fn();
 const mockFire = jest.fn();
 const mockError = jest.fn();
 
-// Mock modules BEFORE imports
+
 jest.unstable_mockModule("axios", () => ({
   default: { post: mockPost },
 }));
@@ -21,7 +21,6 @@ jest.unstable_mockModule("react-hot-toast", () => ({
   default: { error: mockError },
 }));
 
-// Import after mocks
 const { default: axios } = await import("axios");
 const { default: Swal } = await import("sweetalert2");
 const { default: toast } = await import("react-hot-toast");

@@ -7,7 +7,7 @@ test("renders the login page correctly", () => {
       <App />
   );
 
-  // Check key UI elements from your screenshot
+
   expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
   expect(screen.getByPlaceholderText(/enter your email/i)).toBeInTheDocument();
   expect(screen.getByPlaceholderText(/enter your password/i)).toBeInTheDocument();

@@ -10,5 +10,5 @@ export default {
   transformIgnorePatterns: [
     "node_modules/(?!(react-markdown|remark-gfm|unist-util-visit|vfile|micromark|estree-util-is-identifier-name)/)",
   ],
-  setupFiles: ["./jest.setup.js"], // ✅ Add this line
+  setupFiles: ["./jest.setup.js"],
 };
