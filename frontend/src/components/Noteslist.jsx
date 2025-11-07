@@ -4,15 +4,17 @@ import { MdOutlineDeleteOutline } from "react-icons/md";
 export default function NoteCard({ note, onClick, onDelete }) {
   return (
     <div
-      className="bg-white shadow-md border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-shadow duration-300 cursor-pointer"
       onClick={onClick}
+      className="flex flex-col justify-between bg-white/90 backdrop-blur-md border border-gray-200 
+                 rounded-2xl p-4 hover:shadow-lg shadow-sm transition-all duration-300 cursor-pointer 
+                 h-48 w-full"
     >
-      <div className="flex justify-between items-start">
+      {/* Title + Delete button */}
+      <div className="flex justify-between items-start mb-2">
         <h3 className="font-semibold text-lg text-gray-800 truncate pr-2">
           {note.title}
         </h3>
 
-        {/* Delete button with hover animation */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -25,15 +27,20 @@ export default function NoteCard({ note, onClick, onDelete }) {
         </button>
       </div>
 
+
       <div
-        className="mt-3 text-gray-600 text-sm leading-relaxed"
+        className="text-gray-700 text-sm leading-relaxed overflow-hidden relative"
+        style={{
+          display: "-webkit-box",
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: "vertical",
+        }}
         dangerouslySetInnerHTML={{
-          __html:
-            note.description.length > 100
-              ? note.description.slice(0, 100) + "..."
-              : note.description,
+          __html: note.description,
         }}
       />
+
+      <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white/95 to-transparent pointer-events-none rounded-b-2xl"></div>
     </div>
   );
 }
